@@ -1,0 +1,75 @@
+---
+ - hosts: glpi 
+   remote_user: lab 
+   become: yes
+   tasks:
+# tasks file for NTP   
+   - name: Instala o servico NTP (sincronizacao de tempo)
+     apt: name=ntp state=present
+   - name: Garante que o NTP esta rodando
+     service: name=ntp state=started enabled=yes
+# tasks file for PHP
+#   - name: Instala as extensoes PHP necessarias
+#     apt: name={{ item }} state=present
+#     with_items:
+             #     - php-gd
+             #     - php-ssh2
+             #     - phpmyadmin
+             #     - mysql-server
+             #     - mysql-client
+# tasks file for server
+   - name: Atualiza o cache apt de nosso servidor
+     apt: update_cache=yes cache_valid_time=3600
+ 
+   - name: Instala os pacotes necessarios
+     apt: name={{ item }} state=present
+     with_items:
+     - php-gd 
+     - php-ssh2
+     - phpmyadmin
+     - mysql-server
+     - mysql-client
+     - apache2
+     - mysql-server
+     - php
+     - php-mysql
+     - php-dev
+     - php-mbstring
+     - php-apcu-bc
+     - libapache2-mod-php
+     - mcrypt
+     - python-mysqldb
+# tasks file for MySQL
+   - name: 'Cria database MySql'
+     mysql_db:
+      name: glpi_db
+      login_user: root
+      login_password: 123456
+      state: present
+
+   - name: 'Criar usuario MySql'
+     mysql_user:
+      login_user: root
+      login_password: 123456
+      name: glpi_user
+      password: 123456
+      priv: 'glpi_db.*:ALL'
+      state: present
+# tasks file for GLPI
+   - name: Baixa o GLPI
+     get_url: 
+      url=https://github.com/glpi-project/glpi/releases/download/9.4.5/glpi-9.4.5.tgz
+      dest=/tmp/glpi.tar.gz
+      validate_certs=no
+
+   - name: Descompacta o GLPI
+     unarchive: src=/tmp/glpi.tar.gz dest=/var/www/ copy=no
+
+     #   - name: Atualiza o site Apache padrao
+     #     lineinfile:
+     #      dest=/etc/apache2/sites-enabled/000-default.conf
+     #      regexp="(.)+DocumentRoot /var/www/html"
+     #      line="DocumentRoot /var/www/glpi"
+     #     notify:
+     #     - reinicia apache
+
